@@ -1,0 +1,40 @@
+name: Gerar APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descompactar o projeto
+        run: |
+          n=$(ls ./*.zip 2>/dev/null | wc -l)
+          if [ "$n" -ne 1 ]; then
+            echo "Deixe exatamente 1 arquivo .zip na raiz do repositório (encontrei $n)."
+            exit 1
+          fi
+          unzip -qo ./*.zip -d src
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+
+      - name: Compilar o APK
+        working-directory: src/Tocata
+        run: gradle assembleDebug --no-daemon --console=plain --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tocata-APK
+          path: src/Tocata/app/build/outputs/apk/debug/*.apk
